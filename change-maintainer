@@ -1,0 +1,73 @@
+#!/data/data/com.termux/files/usr/bin/bash
+# This script searches for all build.sh files under a specified directory
+# and replaces the TERMUX_PKG_MAINTAINER value. It can also modify a single file if specified.
+
+# Script version
+VERSION="\e[1m\e[33mchange-maintainer\e[0m v1.3\nby PhateValleyman\nJonas.Ned@outlook.com"
+
+# Default directory
+DEFAULT_DIR="/data/data/com.termux/files/home/github/termux-packages"
+
+# Usage function
+usage() {
+	echo -e "Usage: \e[1m\e[33mchange-maintainer\e[0m [\e[1m\e[32moptions\e[0m] <file>"
+	echo -e ""
+	echo -e "Change TERMUX_PKG_MAINTAINER to \n\e[1m\e[36mPhateValleyman <Jonas.Ned@outlook.com>\e[0m\nin build.sh scripts"
+	echo -e ""
+	echo -e "Options:"
+	echo -e "  \e[1m\e[32m-a\e[0m, \e[1m\e[32m--all\e[0m          Modify all build.sh files in the specified directory"
+	echo -e "  \e[1m\e[32m-h\e[0m, \e[1m\e[32m--help\e[0m         Show this help message and exit"
+	echo -e "  \e[1m\e[32m-v\e[0m, \e[1m\e[32m--version\e[0m      Show script version and exit"
+}
+
+# Process options
+ALL_MODE=false
+while [[ "$1" =~ ^- && ! "$1" == "--" ]]; do
+	case $1 in
+		-h | --help )
+			usage
+			exit 0
+			;;
+		-v | --version )
+			echo -e "$VERSION"
+			exit 0
+			;;
+		-a | --all )
+			ALL_MODE=true
+			;;
+	esac
+	shift
+done
+
+# Define the old and new maintainer strings
+OLD_MAINTAINER='TERMUX_PKG_MAINTAINER="@termux"'
+NEW_MAINTAINER='TERMUX_PKG_MAINTAINER="PhateValleyman <Jonas.Ned@outlook.com>"'
+
+# Check if a specific file is provided
+if [ -n "$1" ]; then
+	FILE="$1"
+	if [ -f "$FILE" ]; then
+		# Replace the old maintainer string with the new one in the specified file
+		sed -i "s|$OLD_MAINTAINER|$NEW_MAINTAINER|g" "$FILE"
+		echo -e "\e[4m\e[1mUpdated:\e[0m\n\e[36m$FILE\e[0m"
+	else
+		echo -e "\e[4m\e[1mError:\e[0m\n\e[31m$FILE\e[0m"
+		exit 1
+	fi
+elif [ "$ALL_MODE" = true ]; then
+	# Prompt user for root directory with a default value
+	read -r -p "termux-packages directory [$DEFAULT_DIR]: " ROOT_DIR
+	ROOT_DIR=${ROOT_DIR:-$DEFAULT_DIR}
+
+	# Find all build.sh files in the directory and subdirectories
+	find "$ROOT_DIR" -type f -name "build.sh" | while read -r file; do
+		# Replace the old maintainer string with the new one
+		sed -i "s|$OLD_MAINTAINER|$NEW_MAINTAINER|g" "$file"
+		# Output the file path to confirm changes
+		echo -e "\e[4m\e[1mUpdated:\e[0m\n\e[36m$file\e[0m"
+	done
+else
+	# Show usage if no file is provided and --all is not set
+	usage
+	exit 1
+fi
